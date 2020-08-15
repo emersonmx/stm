@@ -1,0 +1,32 @@
+{
+    "version": "1.0.0",
+    "managers": [
+        {
+            "name": "arch",
+            "install_command": "$STM_CONFIG_PATH/run_if_needed.sh \"yay -Sy\" {{.Packages}}",
+            "update_command": "yay -Syu"
+        },
+        {
+            "name": "misc",
+            "install_command": "$STM_CONFIG_PATH/misc.sh install",
+            "update_command": "$STM_CONFIG_PATH/misc.sh update"
+        },
+        {
+            "name": "rust",
+            "install_command": "$STM_CONFIG_PATH/rust.sh",
+            "update_command": "rustup update"
+        },
+        {
+            "name": "cargo",
+            "install_command": "$STM_CONFIG_PATH/run_if_needed.sh \"cargo install --force\" {{.Packages}}",
+            "update_command": "cargo install --force {{.Packages}}"
+        }
+    ],
+    "tools": [
+        {"package": "alacritty", "binary": "alacritty", "manager": "arch"},
+        {"package": "ttf-fira-code", "path": "/usr/share/fonts/TTF/FiraCode-Regular.ttf", "manager": "arch"},
+
+        {"package": "cargo-watch", "path": "$CARGO_HOME/bin/cargo-watch", "manager": "cargo"},
+        {"package": "tealdeer", "path": "$CARGO_HOME/bin/tldr", "manager": "cargo"}
+    ]
+}
