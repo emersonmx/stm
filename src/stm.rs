@@ -1,3 +1,4 @@
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::path::{Path, PathBuf};
@@ -5,6 +6,11 @@ use std::{fs::File, io::BufReader};
 
 pub fn app_dir() -> PathBuf {
     dirs::config_dir().unwrap().join("stm")
+}
+
+fn render_template(template: &str, packages: &str) -> Result<String, Box<dyn Error>> {
+    let re = Regex::new(r"\{\{\s*packages\s*\}\}")?;
+    Ok(String::from(re.replace_all(template, packages)))
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -192,5 +198,13 @@ mod tests {
 
         let want: Vec<&Tool> = vec![];
         assert_eq!(want, c.tools.filter_by_manager("rust"));
+    }
+
+    #[test]
+    fn it_renders_a_template_string() {
+        let template = "echo install {{packages}}";
+        let want = String::from("echo install arch cargo misc");
+        let got = render_template(template, "arch cargo misc").unwrap();
+        assert_eq!(want, got);
     }
 }
