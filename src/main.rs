@@ -3,8 +3,10 @@ use clap::{App, AppSettings, Arg};
 pub mod stm;
 
 fn main() {
-    let config = stm::Config::default().expect("error while loading config");
     std::env::set_var("STM_CONFIG_PATH", stm::app_dir());
+    std::fs::create_dir_all(stm::app_dir()).expect("error while creating app dir");
+
+    let config = stm::Config::default().expect("error while loading config");
 
     let valid_managers = config.managers.names();
 
