@@ -1,8 +1,14 @@
+use execute::shell;
+use io::Write;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use std::path::{Path, PathBuf};
-use std::{fs::File, io::BufReader};
+use std::{
+    fs::File,
+    io::{self, BufReader},
+    process::Stdio,
+};
 
 pub fn app_dir() -> PathBuf {
     dirs::config_dir().unwrap().join("stm")
@@ -11,6 +17,15 @@ pub fn app_dir() -> PathBuf {
 fn render_template(template: &str, packages: &str) -> Result<String, Box<dyn Error>> {
     let re = Regex::new(r"\{\{\s*packages\s*\}\}")?;
     Ok(String::from(re.replace_all(template, packages)))
+}
+
+fn run_command(command: &str) {
+    let mut cmd = shell(command);
+    cmd.stdin(Stdio::inherit())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .output()
+        .expect("failed to execute process");
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -108,6 +123,8 @@ impl Tool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use io::Write;
+    use std::{io, process::Stdio};
 
     fn create_temp_json() -> tempfile::NamedTempFile {
         let managers = ManagerList(vec![
