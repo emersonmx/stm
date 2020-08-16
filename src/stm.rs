@@ -70,8 +70,8 @@ pub struct Manager {
 pub struct ManagerList(Vec<Manager>);
 
 impl ManagerList {
-    pub fn names(&self) -> Vec<&String> {
-        self.0.iter().map(|m| &m.name).collect()
+    pub fn names(&self) -> Vec<String> {
+        self.0.iter().map(|m| m.name.clone()).collect()
     }
 }
 
@@ -130,6 +130,25 @@ impl Tool {
 
     pub fn new_path(package: &str, path: &str, manager: &str) -> Self {
         Self::new(package, None, Some(path), manager)
+    }
+
+    pub fn is_installed(&self) -> bool {
+        if let Some(binary) = &self.binary {
+            if let Ok(b) = which::which(binary) {
+                if b.exists() {
+                    return true;
+                }
+            }
+        }
+
+        if let Some(path) = &self.path {
+            let path = Path::new(path);
+            if path.exists() {
+                return true;
+            }
+        }
+
+        false
     }
 }
 

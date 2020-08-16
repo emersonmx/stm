@@ -1,8 +1,7 @@
 #!/bin/bash
-set -euo pipefail
-IFS=$'\n\t'
 
-cmd=$1
-[[ $# -le 1 ]] && exit
+cmd="$1"
+shift
+[[ $# -le 0 ]] && exit
 
-bash -c "$cmd $2"
+bash -c "$cmd $*"
