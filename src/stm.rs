@@ -134,7 +134,9 @@ impl Tool {
 
     pub fn is_installed(&self) -> bool {
         if let Some(binary) = &self.binary {
-            if let Ok(b) = which::which(binary) {
+            let binary =
+                shellexpand::full(binary).expect("error while expanding environment variables");
+            if let Ok(b) = which::which(binary.as_ref()) {
                 if b.exists() {
                     return true;
                 }
@@ -142,8 +144,9 @@ impl Tool {
         }
 
         if let Some(path) = &self.path {
-            let path = Path::new(path);
-            if path.exists() {
+            let path =
+                shellexpand::full(path).expect("error while expanding environment variables");
+            if Path::new(path.as_ref()).exists() {
                 return true;
             }
         }
