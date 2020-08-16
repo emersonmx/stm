@@ -1,5 +1,4 @@
 use execute::shell;
-use io::Write;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -7,25 +6,27 @@ use std::path::{Path, PathBuf};
 use std::{
     fs::File,
     io::{self, BufReader},
-    process::Stdio,
+    process::{Output, Stdio},
 };
+
+type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 pub fn app_dir() -> PathBuf {
     dirs::config_dir().unwrap().join("stm")
 }
 
-fn render_template(template: &str, packages: &str) -> Result<String, Box<dyn Error>> {
+fn render_template(template: &str, packages: Vec<&str>) -> Result<String> {
+    let pkgs = packages.join(" ");
     let re = Regex::new(r"\{\{\s*packages\s*\}\}")?;
-    Ok(String::from(re.replace_all(template, packages)))
+    Ok(String::from(re.replace_all(template, pkgs.as_str())))
 }
 
-fn run_command(command: &str) {
+fn run_command(command: &str) -> io::Result<Output> {
     let mut cmd = shell(command);
     cmd.stdin(Stdio::inherit())
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())
         .output()
-        .expect("failed to execute process");
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -39,14 +40,14 @@ impl Config {
         app_dir().join("config.json")
     }
 
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Config, Box<dyn Error>> {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Config> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
         let config = serde_json::from_reader(reader)?;
         Ok(config)
     }
 
-    pub fn default() -> Result<Config, Box<dyn Error>> {
+    pub fn default() -> Result<Config> {
         let file = File::open(Config::path())?;
         let reader = BufReader::new(file);
         let config = serde_json::from_reader(reader)?;
@@ -81,6 +82,18 @@ impl Manager {
             install_command: String::from(install_command),
             update_command: String::from(update_command),
         }
+    }
+
+    pub fn install_packages(&self, packages: Vec<&str>) -> Result<()> {
+        let cmd = render_template(self.install_command.as_str(), packages)?;
+        run_command(cmd.as_str())?;
+        Ok(())
+    }
+
+    pub fn update_packages(&self, packages: Vec<&str>) -> Result<()> {
+        let cmd = render_template(self.update_command.as_str(), packages)?;
+        run_command(cmd.as_str())?;
+        Ok(())
     }
 }
 
@@ -123,8 +136,6 @@ impl Tool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use io::Write;
-    use std::{io, process::Stdio};
 
     fn create_temp_json() -> tempfile::NamedTempFile {
         let managers = ManagerList(vec![
@@ -221,7 +232,7 @@ mod tests {
     fn it_renders_a_template_string() {
         let template = "echo install {{packages}}";
         let want = String::from("echo install arch cargo misc");
-        let got = render_template(template, "arch cargo misc").unwrap();
+        let got = render_template(template, vec!["arch", "cargo", "misc"]).unwrap();
         assert_eq!(want, got);
     }
 }
