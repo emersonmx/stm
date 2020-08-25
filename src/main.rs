@@ -1,21 +1,28 @@
+use cached::proc_macro::cached;
+
 use clap::{App, AppSettings, Arg};
 
 pub mod stm;
 
+#[cached]
+fn load_config() -> stm::Config {
+    stm::Config::default().expect("error while loading config")
+}
+
+fn has_valid_manager(v: String) -> Result<(), String> {
+    let config = load_config();
+    let valid_managers = config.managers.names();
+
+    if !&valid_managers.contains(&v) {
+        return Err(format!("invalid manager {}", v));
+    }
+
+    Ok(())
+}
+
 fn main() {
     std::env::set_var("STM_CONFIG_PATH", stm::app_dir());
     std::fs::create_dir_all(stm::app_dir()).expect("error while creating app dir");
-
-    let config = stm::Config::default().expect("error while loading config");
-
-    let valid_managers = config.managers.names();
-
-    let has_valid_manager = move |v: String| -> Result<(), String> {
-        if !&valid_managers.contains(&v) {
-            return Err(format!("invalid manager {}", v));
-        }
-        Ok(())
-    };
 
     let matches = App::new("System Tool Manager")
         .about("System Tool Manager (STM) is a tool for install and updates any system tools in a easy way.")
@@ -29,7 +36,7 @@ fn main() {
                     .index(1)
                     .required(true)
                     .multiple(true)
-                    .validator(has_valid_manager.clone())
+                    .validator(has_valid_manager)
             ),
         )
         .subcommand(
@@ -39,7 +46,7 @@ fn main() {
                     .index(1)
                     .required(true)
                     .multiple(true)
-                    .validator(has_valid_manager.clone())
+                    .validator(has_valid_manager)
             ),
         )
         .subcommand(App::new("list").about("List all available managers"))
@@ -52,7 +59,7 @@ fn main() {
                 .unwrap()
                 .map(|m| m.to_string())
                 .collect();
-            install_command(&config, args);
+            install_command(args);
         }
         ("update", Some(update_matches)) => {
             let args: Vec<String> = update_matches
@@ -60,16 +67,18 @@ fn main() {
                 .unwrap()
                 .map(|m| m.to_string())
                 .collect();
-            update_command(&config, args);
+            update_command(args);
         }
         ("list", Some(_)) => {
-            list_command(&config);
+            list_command();
         }
         _ => {}
     }
 }
 
-fn install_command(config: &stm::Config, managers: Vec<String>) {
+fn install_command(managers: Vec<String>) {
+    let config = load_config();
+
     managers
         .iter()
         .map(|m| config.find_manager(&m).unwrap())
@@ -86,7 +95,9 @@ fn install_command(config: &stm::Config, managers: Vec<String>) {
         });
 }
 
-fn update_command(config: &stm::Config, managers: Vec<String>) {
+fn update_command(managers: Vec<String>) {
+    let config = load_config();
+
     managers
         .iter()
         .map(|m| config.find_manager(&m).unwrap())
@@ -102,7 +113,9 @@ fn update_command(config: &stm::Config, managers: Vec<String>) {
         });
 }
 
-fn list_command(config: &stm::Config) {
+fn list_command() {
+    let config = load_config();
+
     config
         .managers
         .names()

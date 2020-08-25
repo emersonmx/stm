@@ -29,7 +29,7 @@ fn run_command(command: &str) -> io::Result<Output> {
         .output()
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Config {
     pub managers: ManagerList,
     pub tools: ToolList,
@@ -59,14 +59,14 @@ impl Config {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Manager {
     pub name: String,
     pub install_command: String,
     pub update_command: String,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct ManagerList(Vec<Manager>);
 
 impl ManagerList {
@@ -97,7 +97,7 @@ impl Manager {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Tool {
     pub package: String,
     pub binary: Option<String>,
@@ -105,7 +105,7 @@ pub struct Tool {
     pub manager: String,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct ToolList(Vec<Tool>);
 
 impl ToolList {
